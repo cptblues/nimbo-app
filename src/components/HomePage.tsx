@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HomeHeader } from '@/components/HomeHeader';
 
-export default function Home() {
+export function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <HomeHeader />
