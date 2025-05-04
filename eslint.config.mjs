@@ -44,8 +44,12 @@ export default [
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       
-      // Règles Next.js (uniquement celles qui existent)
+      // Règles Next.js pour App Router
       'next/no-html-link-for-pages': 'error',
+      'next/no-head-element': 'error',
+      'next/no-page-custom-font': 'error',
+      'next/no-sync-scripts': 'error',
+      'next/no-img-element': 'warn',
       
       // Désactiver temporairement les règles trop strictes pour le développement
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -63,7 +67,7 @@ export default [
       'public/**',
       'dist/**',
       'build/**',
-      '**/*.d.ts',
+      'node_modules/**/*.d.ts',
     ],
   },
 ]; 
