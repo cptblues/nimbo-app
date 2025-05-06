@@ -82,6 +82,20 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Table des invitations aux workspaces
+CREATE TABLE IF NOT EXISTS public.workspace_invitations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  invited_email TEXT NOT NULL,
+  invited_by UUID NOT NULL REFERENCES public.users(id),
+  role TEXT NOT NULL DEFAULT 'member',
+  token TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'accepted', 'rejected', 'expired'
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Configuration des politiques RLS (Row Level Security)
 
 -- Activer RLS sur toutes les tables
@@ -91,6 +105,7 @@ ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Politiques pour la table users
 CREATE POLICY "Les utilisateurs authentifiés peuvent voir les profils"
@@ -219,7 +234,52 @@ CREATE POLICY "Les utilisateurs peuvent supprimer leurs propres messages"
   ON public.chat_messages FOR DELETE
   USING (user_id = auth.uid());
 
+-- Politiques pour la table workspace_invitations
+CREATE POLICY "Les membres peuvent voir les invitations du workspace"
+  ON public.workspace_invitations FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.workspace_members 
+      WHERE workspace_id = workspace_invitations.workspace_id AND user_id = auth.uid()
+    )
+    OR 
+    EXISTS (
+      SELECT 1 FROM public.workspaces 
+      WHERE id = workspace_invitations.workspace_id AND owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Seuls les admins peuvent créer des invitations"
+  ON public.workspace_invitations FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.workspace_members 
+      WHERE workspace_id = workspace_invitations.workspace_id AND user_id = auth.uid() AND role = 'admin'
+    )
+    OR 
+    EXISTS (
+      SELECT 1 FROM public.workspaces 
+      WHERE id = workspace_invitations.workspace_id AND owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Seuls les admins peuvent modifier des invitations"
+  ON public.workspace_invitations FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.workspace_members 
+      WHERE workspace_id = workspace_invitations.workspace_id AND user_id = auth.uid() AND role = 'admin'
+    )
+    OR 
+    EXISTS (
+      SELECT 1 FROM public.workspaces 
+      WHERE id = workspace_invitations.workspace_id AND owner_id = auth.uid()
+    )
+    OR invited_email = (SELECT email FROM public.users WHERE id = auth.uid())
+  );
+
 -- Activer Supabase Realtime pour les tables qui nécessitent des mises à jour en temps réel
 ALTER PUBLICATION supabase_realtime ADD TABLE public.users;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.room_participants;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages; 
+ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_invitations; 

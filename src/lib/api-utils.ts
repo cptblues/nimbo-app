@@ -51,6 +51,8 @@ export const ApiErrorCodes = {
   INTERNAL: 'ERR_INTERNAL',
   DUPLICATE: 'ERR_DUPLICATE',
   FOREIGN_KEY: 'ERR_FOREIGN_KEY',
+  EXPIRED: 'ERR_EXPIRED',
+  INVALID_STATE: 'ERR_INVALID_STATE',
 } as const;
 
 // Types des codes d'erreur pour le type checking

@@ -112,7 +112,7 @@ export function CreateWorkspaceForm({ onCancel }: { onCancel?: () => void }) {
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between mt-4">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Annuler
           </Button>

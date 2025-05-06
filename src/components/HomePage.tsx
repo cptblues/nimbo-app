@@ -12,7 +12,7 @@ export function HomePage() {
 
       <main className="flex-1">
         {/* Section héro */}
-        <section className="container px-4 py-20 md:py-32">
+        <section className="px-4 py-20 md:py-32">
           <div className="grid gap-6 md:grid-cols-2 md:gap-12">
             <div className="flex flex-col justify-center space-y-4">
               <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
@@ -39,7 +39,7 @@ export function HomePage() {
         </section>
 
         {/* Section fonctionnalités */}
-        <section className="container px-4 py-16">
+        <section className="px-4 py-16">
           <h2 className="mb-10 text-center text-3xl font-bold">Fonctionnalités principales</h2>
           <div className="grid gap-6 md:grid-cols-3">
             <Card>
@@ -82,7 +82,7 @@ export function HomePage() {
       </main>
 
       <footer className="border-t bg-background py-6">
-        <div className="container px-4">
+        <div className="px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <p className="text-center text-sm text-muted-foreground md:text-left">
               &copy; 2024 Nimbo. Tous droits réservés.

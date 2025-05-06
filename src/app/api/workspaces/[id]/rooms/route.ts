@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { withAuth } from '@/lib/auth-api';
 import { apiSuccess, apiError, handleSupabaseError, ApiErrorCodes } from '@/lib/api-utils';
 import { validateRequest } from '@/lib/validation';
+import { Room } from '@/types/database.types';
 
 // Fonction utilitaire pour vérifier l'accès au workspace
 async function checkWorkspaceAccess(workspaceId: string, userId: string) {
@@ -75,7 +76,7 @@ export const GET = withAuth(async (req, ctx, user) => {
 
     // Pour chaque salle, récupérer le nombre de participants
     const roomsWithParticipants = await Promise.all(
-      (data || []).map(async room => {
+      (data || []).map(async (room: Room) => {
         const { count, error: countError } = await supabase
           .from('room_participants')
           .select('id', { count: 'exact' })

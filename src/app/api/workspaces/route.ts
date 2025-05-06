@@ -1,7 +1,7 @@
-import { createClient } from '@/utils/supabase/server';
-import { withAuth } from '@/lib/auth-api';
 import { apiSuccess, handleSupabaseError } from '@/lib/api-utils';
+import { withAuth } from '@/lib/auth-api';
 import { validateRequest } from '@/lib/validation';
+import { createClient } from '@/utils/supabase/server';
 
 // GET /api/workspaces - Récupérer tous les workspaces de l'utilisateur
 export const GET = withAuth(async (req, ctx, user) => {
@@ -32,7 +32,7 @@ export const GET = withAuth(async (req, ctx, user) => {
 
     // Extraire les workspaces des membres
     const memberWorkspacesData = memberWorkspaces
-      ? memberWorkspaces.map(m => m.workspaces as unknown as any)
+      ? memberWorkspaces.map((m: any) => m.workspaces as unknown as any)
       : [];
 
     // Fusionner et dédupliquer les workspaces
@@ -77,6 +77,15 @@ export const POST = withAuth(async (req, ctx, user) => {
       .single();
 
     if (error) throw error;
+
+    // Ajouter automatiquement le créateur comme membre avec le rôle admin
+    const { error: memberError } = await supabase.from('workspace_members').insert({
+      workspace_id: data.id,
+      user_id: user.id,
+      role: 'admin',
+    });
+
+    if (memberError) throw memberError;
 
     return apiSuccess(data, 201);
   } catch (error) {

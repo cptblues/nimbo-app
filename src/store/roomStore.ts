@@ -280,7 +280,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
                 )
               `
               )
-              .eq('id', payload.new.id)
+              .eq('id', (payload.new as any).id)
               .single();
 
             if (data) {
@@ -304,7 +304,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
           filter: `room_id=eq.${roomId}`,
         },
         (payload: RealtimePostgresChangesPayload<RoomParticipant>) => {
-          get().updateParticipant(payload.new.id, payload.new as RoomParticipant);
+          const newParticipant = payload.new as RoomParticipant & { id: string };
+          get().updateParticipant(newParticipant.id, newParticipant);
         }
       )
       .on(
@@ -316,7 +317,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
           filter: `room_id=eq.${roomId}`,
         },
         (payload: RealtimePostgresChangesPayload<RoomParticipant>) => {
-          get().removeParticipant(payload.old.id);
+          const oldParticipant = payload.old as Partial<RoomParticipant> & { id: string };
+          get().removeParticipant(oldParticipant.id);
         }
       );
 
@@ -347,7 +349,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
                 )
               `
               )
-              .eq('id', payload.new.id)
+              .eq('id', (payload.new as any).id)
               .single();
 
             if (data) {
@@ -371,7 +373,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
           filter: `room_id=eq.${roomId}`,
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
-          get().deleteMessage(payload.old.id);
+          const oldMessage = payload.old as Partial<Message> & { id: string };
+          get().deleteMessage(oldMessage.id);
         }
       );
 
@@ -544,7 +547,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       const user = userData.user;
 
       // Récupérer le workspace_id de cette salle
-      const { data: roomData, error: roomError } = await supabase
+      const { data: workspaceId, error: roomError } = await supabase
         .from('rooms')
         .select('workspace_id')
         .eq('id', roomId)
@@ -553,14 +556,14 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       if (roomError) throw roomError;
 
       // Récupérer les IDs des salles du même workspace
-      const { data: roomsData, error: roomsError } = await supabase
+      const { data: idsWorkspace, error: roomsError } = await supabase
         .from('rooms')
         .select('id')
-        .eq('workspace_id', roomData.workspace_id);
+        .eq('workspace_id', workspaceId);
 
       if (roomsError) throw roomsError;
 
-      const roomIds = roomsData.map((room: Room) => room.id);
+      const roomIds = idsWorkspace.map((roomId: { id: string }) => roomId.id);
 
       // Quitter toutes les autres salles du même workspace
       if (roomIds.length > 0) {

@@ -177,6 +177,44 @@ export interface Database {
           updated_at?: string;
         };
       };
+      workspace_invitations: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          invited_email: string;
+          invited_by: string;
+          role: string;
+          token: string;
+          status: string;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          invited_email: string;
+          invited_by: string;
+          role?: string;
+          token: string;
+          status?: string;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          invited_email?: string;
+          invited_by?: string;
+          role?: string;
+          token?: string;
+          status?: string;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

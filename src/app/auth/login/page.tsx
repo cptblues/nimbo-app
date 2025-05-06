@@ -119,7 +119,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
-          <div className="flex gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full">
             <Button onClick={handleLogin} disabled={loading} className="w-full">
               {loading ? 'Chargement...' : 'Se connecter'}
             </Button>

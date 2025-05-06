@@ -68,7 +68,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(set => ({
 
       // Fusionner et dédupliquer les workspaces
       const memberWorkspacesData = memberWorkspaces
-        ? memberWorkspaces.map(m => m.workspaces as unknown as Workspace)
+        ? memberWorkspaces.map((m: { workspaces: unknown }) => m.workspaces as unknown as Workspace)
         : [];
 
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
@@ -106,6 +106,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(set => ({
         .single();
 
       if (error) throw error;
+
+      // Ajouter automatiquement le créateur comme membre avec le rôle admin
+      const { error: memberError } = await supabase.from('workspace_members').insert({
+        workspace_id: data.id,
+        user_id: userId,
+        role: 'admin',
+      });
+
+      if (memberError) throw memberError;
 
       set(state => ({
         workspaces: [...state.workspaces, data],

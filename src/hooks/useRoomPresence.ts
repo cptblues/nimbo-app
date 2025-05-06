@@ -36,11 +36,6 @@ interface RawParticipant {
   };
 }
 
-interface Room {
-  id: string;
-  workspace_id: string;
-}
-
 /**
  * Hook pour gérer la présence des utilisateurs dans une salle en temps réel
  * @param roomId ID de la salle
@@ -132,7 +127,7 @@ export function useRoomPresence(roomId: string) {
                 )
               `
               )
-              .eq('id', payload.new.id)
+              .eq('id', (payload.new as RoomParticipant & { id: string }).id)
               .single();
 
             if (fetchError) throw fetchError;
@@ -163,7 +158,9 @@ export function useRoomPresence(roomId: string) {
           // Un participant a mis à jour son statut
           setParticipants(prevParticipants =>
             prevParticipants.map(participant =>
-              participant.id === payload.new.id ? { ...participant, ...payload.new } : participant
+              participant.id === (payload.new as RoomParticipant & { id: string }).id
+                ? { ...participant, ...payload.new }
+                : participant
             )
           );
         }
@@ -179,7 +176,10 @@ export function useRoomPresence(roomId: string) {
         (payload: RealtimePostgresChangesPayload<RoomParticipant>) => {
           // Un participant a quitté la salle
           setParticipants(prevParticipants =>
-            prevParticipants.filter(participant => participant.id !== payload.old.id)
+            prevParticipants.filter(
+              participant =>
+                participant.id !== (payload.old as Partial<RoomParticipant> & { id: string }).id
+            )
           );
         }
       );
@@ -222,7 +222,7 @@ export function useRoomPresence(roomId: string) {
 
       if (roomsError) throw roomsError;
 
-      const roomIds = roomsData.map((room: Room) => room.id);
+      const roomIds = roomsData.map((room: any) => room.id);
 
       // Quitter toutes les autres salles du même workspace
       if (roomIds.length > 0) {

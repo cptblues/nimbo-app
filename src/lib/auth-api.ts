@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { ApiErrorCodes, apiError } from './api-utils';
 
-// Type pour une fonction de route API avec authentification
+// Type mis à jour pour une fonction de route API avec authentification
 export type AuthenticatedRouteHandler = (
   req: NextRequest,
-  context: { params: Record<string, string | string[]> },
+  context: any,
   user: any
 ) => Promise<NextResponse>;
 
 // Middleware d'authentification pour les routes API
 export function withAuth(handler: AuthenticatedRouteHandler) {
-  return async (req: NextRequest, context: { params: Record<string, string | string[]> }) => {
+  return async (req: NextRequest, context: any) => {
     // Initialiser Supabase
     const supabase = await createClient();
 

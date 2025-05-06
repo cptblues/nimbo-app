@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { RealtimeChannel, RealtimeSystemEvent } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+// Définir notre propre type pour les événements système
+interface RealtimeSystemEvent {
+  detail?: {
+    message?: string;
+    [key: string]: any;
+  };
+}
 
 type ConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'RECONNECTING';
 

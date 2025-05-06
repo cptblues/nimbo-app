@@ -3,12 +3,6 @@ import { CreateWorkspaceModal } from '@/components/workspace/CreateWorkspaceModa
 import { WorkspaceList } from '@/components/workspace/WorkspaceList';
 import { Workspace } from '@/types/models/workspace';
 
-interface MemberWorkspace {
-  workspace_id: string;
-  role: string;
-  workspaces: Workspace;
-}
-
 export default async function WorkspacesPage() {
   const supabase = await createClient();
   const {
@@ -43,7 +37,7 @@ export default async function WorkspacesPage() {
   // Fusionner et dédupliquer les workspaces
   const allWorkspaces = [
     ...(ownedWorkspaces || []).map((w: Workspace) => ({ ...w, role: 'owner' })),
-    ...(memberWorkspaces || []).map((m: MemberWorkspace) => ({
+    ...(memberWorkspaces || []).map((m: any) => ({
       ...m.workspaces,
       role: m.role,
     })),
@@ -52,10 +46,10 @@ export default async function WorkspacesPage() {
   // Dédupliquer par ID
   const uniqueWorkspaces = allWorkspaces.filter(
     (w, index, self) => index === self.findIndex(t => t.id === w.id)
-  );
+  ) as any;
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="mx-auto py-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Mes espaces de travail</h1>
         <CreateWorkspaceModal triggerText="Créer un espace" />

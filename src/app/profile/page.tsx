@@ -23,7 +23,7 @@ export default async function ProfilePage() {
   const initials = getInitials(displayName);
 
   return (
-    <div className="container mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl">
       <h1 className="mb-6 text-3xl font-bold">Mon Profil</h1>
 
       <Card className="mb-8">

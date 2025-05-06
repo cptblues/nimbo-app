@@ -2,8 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { withAuth } from '@/lib/auth-api';
 import { apiSuccess, apiError, handleSupabaseError, ApiErrorCodes } from '@/lib/api-utils';
 import { validateRequest } from '@/lib/validation';
+import { v4 as uuidv4 } from 'uuid';
 
-// GET /api/workspaces/[id]/members - Liste des membres d'un workspace
+// GET /api/workspaces/[id]/invitations - Liste des invitations d'un workspace
 export const GET = withAuth(async (req, ctx, user) => {
   try {
     const { id } = await ctx.params;
@@ -28,56 +29,35 @@ export const GET = withAuth(async (req, ctx, user) => {
       return apiError("Vous n'avez pas accès à ce workspace", ApiErrorCodes.FORBIDDEN, 403);
     }
 
-    // Récupérer tous les membres avec leurs informations utilisateur
+    // Récupérer toutes les invitations avec les informations de l'invitant
     const { data, error } = await supabase
-      .from('workspace_members')
+      .from('workspace_invitations')
       .select(
         `
         id,
-        role,
-        user_id,
         workspace_id,
+        invited_email,
+        invited_by,
+        role,
+        status,
+        expires_at,
         created_at,
         users (id, display_name, avatar_url, email)
       `
       )
-      .eq('workspace_id', id);
+      .eq('workspace_id', id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Ajouter le propriétaire à la liste
-    const { data: workspace, error: workspaceError } = await supabase
-      .from('workspaces')
-      .select(
-        `
-        owner_id,
-        users (id, display_name, avatar_url, email)
-      `
-      )
-      .eq('id', id)
-      .single();
-
-    if (workspaceError) throw workspaceError;
-
-    // Formater les données pour inclure le propriétaire
-    const formattedData = [
-      {
-        id: null,
-        role: 'owner',
-        user_id: workspace.owner_id,
-        workspace_id: id,
-        users: workspace.users,
-      },
-      ...data,
-    ];
-
-    return apiSuccess(formattedData);
+    return apiSuccess(data);
   } catch (error) {
     return handleSupabaseError(error);
   }
 });
 
-// POST /api/workspaces/[id]/members - Ajouter un membre au workspace
+// POST /api/workspaces/[id]/invitations - Créer une invitation
 export const POST = withAuth(async (req, ctx, user) => {
   try {
     const { id } = ctx.params;
@@ -85,7 +65,7 @@ export const POST = withAuth(async (req, ctx, user) => {
 
     // Valider les données
     const validationError = validateRequest(body, {
-      user_id: { required: true, isUUID: true },
+      email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
       role: { required: true, enum: ['admin', 'member'] },
     });
 
@@ -111,49 +91,80 @@ export const POST = withAuth(async (req, ctx, user) => {
 
     if (!isAdmin && !isOwner) {
       return apiError(
-        "Vous n'avez pas les droits pour ajouter un membre",
+        "Vous n'avez pas les droits pour inviter un membre",
         ApiErrorCodes.FORBIDDEN,
         403
       );
     }
 
-    // Vérifier si l'utilisateur existe
-    const { data: userExists } = await supabase
+    // Vérifier si cet email est déjà membre
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('id', body.user_id)
+      .eq('email', body.email)
       .single();
 
-    if (!userExists) {
-      return apiError("L'utilisateur spécifié n'existe pas", ApiErrorCodes.NOT_FOUND, 404);
+    if (existingUser) {
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', id)
+        .eq('user_id', existingUser.id)
+        .single();
+
+      if (existingMember) {
+        return apiError(
+          'Cet utilisateur est déjà membre du workspace',
+          ApiErrorCodes.DUPLICATE,
+          409
+        );
+      }
     }
 
-    // Vérifier si l'utilisateur est déjà membre
-    const { data: existingMember } = await supabase
-      .from('workspace_members')
-      .select('id')
+    // Vérifier si une invitation est déjà en cours pour cet email
+    const { data: existingInvitation } = await supabase
+      .from('workspace_invitations')
+      .select('id, status')
       .eq('workspace_id', id)
-      .eq('user_id', body.user_id)
+      .eq('invited_email', body.email)
+      .eq('status', 'pending')
       .single();
 
-    if (existingMember) {
-      return apiError('Cet utilisateur est déjà membre du workspace', ApiErrorCodes.DUPLICATE, 409);
+    if (existingInvitation) {
+      return apiError(
+        'Une invitation est déjà en cours pour cet email',
+        ApiErrorCodes.DUPLICATE,
+        409
+      );
     }
 
-    // Ajouter le membre
+    // Générer un token unique
+    const token = uuidv4();
+
+    // Créer l'invitation
     const { data, error } = await supabase
-      .from('workspace_members')
+      .from('workspace_invitations')
       .insert({
         workspace_id: id,
-        user_id: body.user_id,
+        invited_email: body.email,
+        invited_by: user.id,
         role: body.role,
+        token,
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    return apiSuccess(data, 201);
+    // TODO: Envoi de l'email d'invitation (sera implémenté ultérieurement)
+    // Pour le moment, retourner le token dans la réponse pour les tests
+    return apiSuccess(
+      {
+        ...data,
+        invite_link: `${process.env.NEXT_PUBLIC_APP_URL}/invitations/accept?token=${token}`,
+      },
+      201
+    );
   } catch (error) {
     return handleSupabaseError(error);
   }

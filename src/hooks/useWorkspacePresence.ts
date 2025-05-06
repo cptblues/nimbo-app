@@ -14,17 +14,6 @@ interface WorkspaceUser {
   };
 }
 
-interface WorkspaceMember {
-  user_id: string;
-  users: {
-    id: string;
-    display_name: string;
-    avatar_url?: string;
-    status?: string;
-    status_message?: string;
-  };
-}
-
 interface RoomParticipant {
   user_id: string;
   rooms: {
@@ -99,18 +88,21 @@ export function useWorkspacePresence(workspaceId: string) {
             )
           `
           )
-          .in('room_id', supabase.from('rooms').select('id').eq('workspace_id', workspaceId));
+          .in(
+            'room_id',
+            supabase.from('rooms').select('id').eq('workspace_id', workspaceId) as any
+          );
 
         if (participantsError) throw participantsError;
 
         // Créer un Map des participants par user_id pour un accès rapide
         const participantsMap = new Map<string, RoomParticipant['rooms']>();
-        roomParticipants.forEach((participant: RoomParticipant) => {
+        roomParticipants.forEach((participant: any) => {
           participantsMap.set(participant.user_id, participant.rooms);
         });
 
         // Combiner les informations pour créer la liste complète des utilisateurs
-        const workspaceUsers = members.map((member: WorkspaceMember) => {
+        const workspaceUsers = members.map((member: any) => {
           const user = member.users;
           const currentRoom = participantsMap.get(user.id);
 
@@ -151,11 +143,13 @@ export function useWorkspacePresence(workspaceId: string) {
         // Mettre à jour le statut d'un utilisateur
         setUsers(prevUsers =>
           prevUsers.map(user =>
-            user.id === payload.new.id
+            user.id === (payload.new as UserUpdate & { id: string }).id
               ? {
                   ...user,
-                  status: payload.new.status || user.status,
-                  status_message: payload.new.status_message || user.status_message,
+                  status: (payload.new as UserUpdate & { status?: string }).status || user.status,
+                  status_message:
+                    (payload.new as UserUpdate & { status_message?: string }).status_message ||
+                    user.status_message,
                 }
               : user
           )
@@ -175,13 +169,13 @@ export function useWorkspacePresence(workspaceId: string) {
         },
         async (payload: RealtimePostgresChangesPayload<RoomParticipantInsert>) => {
           try {
-            const userId = payload.new.user_id;
+            const userId = (payload.new as RoomParticipantInsert & { user_id: string }).user_id;
 
             // Récupérer les informations de la salle
             const { data: roomData, error: roomError } = await supabase
               .from('rooms')
               .select('id, name')
-              .eq('id', payload.new.room_id)
+              .eq('id', (payload.new as RoomParticipantInsert & { room_id: string }).room_id)
               .single();
 
             if (roomError) throw roomError;
@@ -206,7 +200,7 @@ export function useWorkspacePresence(workspaceId: string) {
           filter: `room_id=in.(${supabase.from('rooms').select('id').eq('workspace_id', workspaceId)})`,
         },
         (payload: RealtimePostgresChangesPayload<RoomParticipantDelete>) => {
-          const userId = payload.old.user_id;
+          const userId = (payload.old as any).user_id;
 
           // Supprimer la salle actuelle de l'utilisateur
           setUsers(prevUsers =>

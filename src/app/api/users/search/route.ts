@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { withAuth } from '@/lib/auth-api';
 import { apiSuccess, apiError, handleSupabaseError, ApiErrorCodes } from '@/lib/api-utils';
+import { User } from '@/types/database.types';
 
 // GET /api/users/search - Recherche d'utilisateurs (pour invitations)
 export const GET = withAuth(async (req, ctx, user) => {
@@ -52,11 +53,11 @@ export const GET = withAuth(async (req, ctx, user) => {
       if (workspaceError && workspaceError.code !== 'PGRST116') throw workspaceError;
 
       // Filtrer les utilisateurs qui sont déjà membres ou propriétaire
-      const existingMemberIds = existingMembers?.map(m => m.user_id) || [];
+      const existingMemberIds = existingMembers?.map((m: { user_id: string }) => m.user_id) || [];
       const ownerId = workspace?.owner_id;
 
-      const filteredUsers = data.filter(user => {
-        return !existingMemberIds.includes(user.id) && user.id !== ownerId;
+      const filteredUsers = data.filter((user: Partial<User>) => {
+        return !existingMemberIds.includes(user.id!) && user.id !== ownerId;
       });
 
       return apiSuccess(filteredUsers);

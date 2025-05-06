@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useUserStore } from '@/store/userStore';
-import {
-  RealtimeChannel,
-  RealtimePostgresChangesPayload,
-  PresencePayload,
-} from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+
+// Définir nos propres types pour les payloads
+interface PresencePayload {
+  newPresences: Array<Record<string, any>>;
+  leftPresences: Array<Record<string, any>>;
+}
 
 type PresenceStatus = 'online' | 'away' | 'busy' | 'offline';
 
@@ -65,7 +67,7 @@ export function usePresence(channelName: string, userIds: string[] = []) {
       .channel(channelName)
       // Cast du canal pour permettre l'utilisation de postgres_changes
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',
@@ -76,7 +78,7 @@ export function usePresence(channelName: string, userIds: string[] = []) {
           handlePresenceChange(payload);
         }
       )
-      .on('presence', { event: 'sync' }, () => {
+      .on('presence' as any, { event: 'sync' }, () => {
         // Synchronisation des états de présence
         const newState = channel?.presenceState() || {};
 
@@ -102,7 +104,7 @@ export function usePresence(channelName: string, userIds: string[] = []) {
 
         setPresenceUsers(updatedUsers);
       })
-      .on('presence', { event: 'join' }, ({ newPresences }: PresencePayload) => {
+      .on('presence' as any, { event: 'join' }, ({ newPresences }: PresencePayload) => {
         // Un nouvel utilisateur a rejoint
         if (newPresences && newPresences.length > 0) {
           setPresenceUsers(prev => {
@@ -122,7 +124,7 @@ export function usePresence(channelName: string, userIds: string[] = []) {
           });
         }
       })
-      .on('presence', { event: 'leave' }, ({ leftPresences }: PresencePayload) => {
+      .on('presence' as any, { event: 'leave' }, ({ leftPresences }: PresencePayload) => {
         // Un utilisateur est parti
         if (leftPresences && leftPresences.length > 0) {
           const leftPresence = leftPresences[0];

@@ -37,8 +37,8 @@ export const GET = withAuth(async (req, ctx, user) => {
       workspaces: {
         owned: ownedWorkspaces || [],
         member:
-          memberWorkspaces?.map(m => ({
-            ...m.workspaces,
+          memberWorkspaces?.map((m: { role: string; workspaces: unknown }) => ({
+            ...(m.workspaces as { id: string; name: string }),
             role: m.role,
           })) || [],
       },
